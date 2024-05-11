@@ -39,9 +39,9 @@ def welcome():
             <b>Temp Observations for the most active station for the last year </b>| /api/v1.0/tobs <a href='http://127.0.0.1:5000/api/v1.0/tobs'>click</a><br/><br/>\
             ----------------------------------------------------------------------<br/><br/>\
             <b>Search for your desired date ranges!  Allowable dates between : 2010-01-01 and 2017-08-23</b><br/><br/>\
-            <b>Daily Temp Info (starting from desired date) </b>| /api/v1.0/YYYY-MM-DD <-- please change YYYY-MM-DD into the date you would like! <br/>\
+            <b>Temp Info (starting from desired date) </b>| /api/v1.0/YYYY-MM-DD <-- please change YYYY-MM-DD into the date you would like! <br/>\
 	        </br><b>Example:</b> http://127.0.0.1:5000/api/v1.0/2016-03-15   <a href='http://127.0.0.1:5000/api/v1.0/2016-03-15'>click</a><br/><br/>\
-            <b>Daily Temp Info (from desired start date and end date) </b>| /api/v1.0/YYYY-MM-DD/YYYY-MM-DD <-- please change YYYY-MM-DD into the date range you would like!<br/><br/>\
+            <b>Temp Info (from desired start date and end date) </b>| /api/v1.0/YYYY-MM-DD/YYYY-MM-DD <-- please change YYYY-MM-DD into the date range you would like!<br/><br/>\
             <b>Example: </b>http://127.0.0.1:5000/api/v1.0/2016-03-15/2017-04-15   <a href='http://127.0.0.1:5000/api/v1.0/2016-03-15/2017-04-15'>click</a><br/><br/><br/>\
                 *********************************************</center>"
 
@@ -100,17 +100,15 @@ def tobs():
 # Flask route for min, max, and avg temps
 @app.route("/api/v1.0/<start>")
 def daily_temp(start):
-    temp_calc_query = session.query(Measurement.date, func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
-                              filter(Measurement.date >= start).group_by(Measurement.date)
-    temp_data = []
-    for daily_temp in temp_calc_query:
-        (t_date, t_min, t_avg, t_max) = daily_temp
-        temp_dict = {}
-        temp_dict['Date'] = t_date
-        temp_dict['Temp Min'] = t_min
-        temp_dict['Temp Max'] = t_max
-        temp_dict['Temp Avg'] = t_avg
-        temp_data.append(temp_dict)
+    temp_calc_query = session.query(Measurement.tobs).filter(Measurement.date >= start)
+    temps = [temp[0] for temp in temp_calc_query]
+    
+    temp_data = {
+        "TMIN": min(temps),
+        "TMAX": max(temps),
+        "TAVG": round(sum(temps) / len(temps), 2)
+    }
+    
     return jsonify(temp_data)
 
 
@@ -118,18 +116,16 @@ def daily_temp(start):
 # Flask route for date range for min, max, and avg temps
 @app.route("/api/v1.0/<start>/<end>")
 def daily_temp_range(start,end):
-    range_calc_query = session.query(Measurement.date, func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
-                              filter(Measurement.date >= start, Measurement.date <= end).group_by(Measurement.date)
-    range_data = []
-    for range_temp in range_calc_query:
-        (t_date2, t_min2, t_avg2, t_max2) = range_temp
-        range_dict = {}
-        range_dict['Date'] = t_date2
-        range_dict['Temp Min'] = t_min2
-        range_dict['Temp Max'] = t_max2
-        range_dict['Temp Avg'] = t_avg2
-        range_data.append(range_dict)
-    return jsonify(range_data)
+    range_calc_query = session.query(Measurement.tobs).filter(Measurement.date >= start, Measurement.date <= end)
+    temps1 = [temp[0] for temp in range_calc_query]
+    
+    temp_data1 = {
+        "TMIN": min(temps1),
+        "TMAX": max(temps1),
+        "TAVG": round(sum(temps1) / len(temps1), 2)
+    }
+    
+    return jsonify(temp_data1)
     
 if __name__ == "__main__":
     app.run(debug=True)
